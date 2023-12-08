@@ -16,11 +16,14 @@
 package io.netty.channel.jsc;
 
 import com.fazecast.jSerialComm.SerialPort;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelPromise;
+import io.netty.channel.RecvByteBufAllocator;
 import io.netty.channel.oio.OioByteStreamChannel;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.SocketAddress;
 import java.util.concurrent.TimeUnit;
 
@@ -69,8 +72,8 @@ public class JSerialCommChannel extends OioByteStreamChannel {
             throw new IOException("Could not open port: " + remote.value());
         }
 
-        commPort.setComPortTimeouts(
-                SerialPort.TIMEOUT_READ_BLOCKING, config().getOption(READ_TIMEOUT), 0);
+//        commPort.setComPortTimeouts(
+//                SerialPort.TIMEOUT_READ_BLOCKING, config().getOption(READ_TIMEOUT), 0);
 
         deviceAddress = remote;
         serialPort = commPort;
@@ -182,6 +185,19 @@ public class JSerialCommChannel extends OioByteStreamChannel {
                 safeSetFailure(promise, t);
                 closeIfClosed();
             }
+        }
+    }
+
+    @Override
+    protected int doReadBytes(ByteBuf buf) throws Exception {
+        final RecvByteBufAllocator.Handle allocHandle = unsafe().recvBufAllocHandle();
+        allocHandle.attemptedBytesRead(Math.max(1, Math.min(available(), buf.maxWritableBytes())));
+        InputStream is = serialPort.getInputStream();
+        int i = allocHandle.attemptedBytesRead();
+        try {
+            return buf.writeBytes(is, i);
+        } catch (IOException e) {
+            throw new JSerialCommReadTimeoutException("The Serial read operation time out before any data was returnd");
         }
     }
 }

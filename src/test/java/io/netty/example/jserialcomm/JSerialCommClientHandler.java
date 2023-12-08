@@ -32,6 +32,6 @@ public class JSerialCommClientHandler extends SimpleChannelInboundHandler<String
         } else {
             System.out.println("Serial port responded with not-OK: " + msg);
         }
-        ctx.close();
+//        ctx.close();
     }
 }

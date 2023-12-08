@@ -16,12 +16,14 @@
 package io.netty.example.jserialcomm;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.jsc.JSerialCommDeviceAddress;
 import io.netty.channel.jsc.JSerialCommChannel;
 import io.netty.channel.oio.OioEventLoopGroup;
+import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
@@ -31,7 +33,7 @@ import io.netty.handler.codec.string.StringEncoder;
  */
 public final class JSerialCommClient {
 
-    static final String PORT = System.getProperty("port", "COM7");
+    static final String PORT = System.getProperty("port", "/dev/pts/4");
 
     public static void main(String[] args) throws Exception {
         EventLoopGroup group = new OioEventLoopGroup();
@@ -43,10 +45,12 @@ public final class JSerialCommClient {
                  @Override
                  public void initChannel(JSerialCommChannel ch) throws Exception {
                      ch.pipeline().addLast(
-                         new LineBasedFrameDecoder(32768),
+//                         new LineBasedFrameDecoder(32768),
+                         new DelimiterBasedFrameDecoder(32768, true, Unpooled.copiedBuffer("\r".getBytes())),
                          new StringEncoder(),
                          new StringDecoder(),
-                         new JSerialCommClientHandler()
+                         new JSerialCommClientHandler(),
+                         new ExceptionCaughtHandler()
                      );
                  }
              });
